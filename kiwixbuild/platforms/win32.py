@@ -9,7 +9,7 @@ class Win32PlatformInfo(PlatformInfo):
     build = 'win32'
     compatible_hosts = ['fedora', 'debian']
     arch_full = 'i686-w64-mingw32'
-    extra_libs = ['-lwinmm', '-lshlwapi', '-lws2_32', '-lssp']
+    extra_libs = ['-lwinmm', '-lshlwapi', '-lws2_32']
 
     def get_cross_config(self):
         return {
@@ -44,8 +44,9 @@ class Win32PlatformInfo(PlatformInfo):
     @property
     def binaries(self):
         return {k:which('{}-{}'.format(self.arch_full, v))
-                for k, v in (('CC', 'gcc'),
-                             ('CXX', 'g++'),
+                for k, v in (('CC', 'gcc-posix'),
+                             ('CXX', 'g++-posix'),
+                             ('LD', 'ld'),
                              ('AR', 'ar'),
                              ('STRIP', 'strip'),
                              ('WINDRES', 'windres'),
@@ -65,6 +66,11 @@ class Win32PlatformInfo(PlatformInfo):
     @property
     def configure_option(self):
         return '--host={}'.format(self.arch_full)
+
+    def set_comp_flags(self, env):
+        super().set_comp_flags(env)
+        env['CFLAGS'] = " -Wp,-D_FORTIFY_SOURCE=0 -fno-stack-protector -fexceptions --param=ssp-buffer-size=4 "+env['CFLAGS']
+        env['CXXFLAGS'] = " -Wp,-D_FORTIFY_SOURCE=0 -fno-stack-protector -fexceptions --param=ssp-buffer-size=4 "+env['CXXFLAGS']
 
     def set_compiler(self, env):
         for k, v in self.binaries.items():
